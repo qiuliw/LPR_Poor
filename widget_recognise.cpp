@@ -2,6 +2,8 @@
 #include "ui_widget.h"
 #include <vector>
 
+
+
 //车牌定位
 Mat Widget::lic_locate(Mat input)
 {

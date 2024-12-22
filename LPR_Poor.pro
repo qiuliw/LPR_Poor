@@ -20,8 +20,12 @@ HEADERS += \
 FORMS += \
     widget.ui
 
-INCLUDEPATH += D:\OpenCV\OpenCV-MinGW-Build-OpenCV-4.5.5-x64\include
-LIBS += D:\OpenCV\OpenCV-MinGW-Build-OpenCV-4.5.5-x64\x64\mingw\lib\libopencv_*.a
+INCLUDEPATH += \
+    D:/Software/opencv-4.5.5/build/install/include/opencv2 \
+    D:/Software/opencv-4.5.5/build/install/include
+    D:/Software/opencv-4.5.5/build/include
+
+LIBS += D:/Software/opencv-4.5.5/build/install/x64/mingw/lib/libopencv_*.a
 
 
 # Default rules for deployment.
