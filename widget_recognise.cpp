@@ -43,10 +43,10 @@ Mat Widget::lic_locate(Mat input)
     dilate(mask, mask, getStructuringElement(MORPH_RECT, Size(3, 3)), Point(-1, -1), 2);
     erode(mask, mask, getStructuringElement(MORPH_RECT, Size(3, 3)), Point(-1, -1), 1);
 
-//    //显示处理结果
-//    Mat blue=Mat();
-//    cv::bitwise_and(input, input, blue, mask);  //mask和原图与运算，获取蓝色部分
-//    showImage(blue, ui->lb_main);
+   //显示处理结果
+   // Mat blue=Mat();
+   // cv::bitwise_and(input, input, blue, mask);  //mask和原图与运算，获取蓝色部分
+   // showImage(blue, ui->lb_main);
 
     //收集所有蓝色轮廓
     vector<vector<cv::Point>> contours;
@@ -181,6 +181,9 @@ Mat Widget::lic_locate(Mat input)
     qWarning() << "最大矩形宽高：" << output.cols << output.rows;
 
     qWarning() << "车牌定位结束————————————————";
+
+    showImage(output,"1.截取车牌");
+
     return output;
 }
 
@@ -304,6 +307,9 @@ Mat Widget::char_extract(Mat input)
             gray.setTo(0, labels == i);
 
     qWarning() << "字符提取结束————————————————";
+
+    showImage(gray,"2.识别字符区域");
+
     return gray;
 }
 
@@ -387,6 +393,10 @@ vector<Mat> Widget::char_segment(Mat input)
     }
 
     qWarning() << "字符分割结束————————————————";
+
+    // 显示分割后的字符
+    displaySegmentedChars(output);
+
     return output;
 }
 

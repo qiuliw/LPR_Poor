@@ -34,6 +34,9 @@ public:
     string match_province(Mat input);//省份缩写匹配
     string match_NumLet(Mat input);//数字和字母匹配
 
+    void displaySegmentedChars(const std::vector<cv::Mat>& segmentedChars); //显示分割后的车牌
+    void showImage(const cv::Mat &image, const QString &windowTitle); // 显示处理后的图像
+
 private slots:
     void on_btn1_recognize_clicked();
     void on_btn2_clear_clicked();
@@ -53,5 +56,6 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
+
 };
 #endif // WIDGET_H

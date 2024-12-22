@@ -146,3 +146,88 @@ string Widget::recognize(Mat input)  //车牌识别主函数
         str_lic+=match_NumLet(licChar[i]);
     return str_lic;
 }
+
+
+// 显示分割后的字符
+void Widget::displaySegmentedChars(const std::vector<cv::Mat>& segmentedChars)
+{
+    // 创建一个新的窗口
+    QWidget* window = new QWidget;
+    window->setWindowTitle("3.分割后的字符");
+
+    // 创建一个横向布局
+    QHBoxLayout* layout = new QHBoxLayout(window);
+
+    // 设置布局中的间距（例如，设置为10像素）
+    layout->setSpacing(10);
+
+    // 遍历分割后的字符图像，并添加到布局中
+    for (const auto& mat : segmentedChars)
+    {
+        // 将OpenCV的Mat转换为QImage
+        // 注意：这里假设mat是单通道的灰度图像
+        QImage qimg(mat.data, mat.cols, mat.rows, static_cast<int>(mat.step), QImage::Format_Grayscale8);
+
+        QImage imgCopy = qimg.copy();
+
+        // 创建一个QLabel并设置图像
+        QLabel* label = new QLabel;
+        label->setPixmap(QPixmap::fromImage(imgCopy));
+        label->setAlignment(Qt::AlignCenter);
+
+
+        // 将QLabel添加到布局中
+        layout->addWidget(label);
+    }
+
+
+    // 设置窗口的布局
+    window->setLayout(layout);
+
+    // 显示窗口
+    window->show();
+}
+
+
+
+// 显示处理后的图像的函数
+void Widget::showImage(const cv::Mat &image, const QString &windowTitle)
+{
+    // 将OpenCV的Mat对象转换为QImage对象
+    // 注意：这里假设图像是8位单通道（灰度图）或8位三通道（彩色图）
+    QImage qimg;
+    if (image.type() == CV_8UC1) {
+        // 灰度图
+        qimg = QImage((const unsigned char*)(image.data), image.cols, image.rows, static_cast<int>(image.step), QImage::Format_Grayscale8);
+    } else if (image.type() == CV_8UC3) {
+        // 彩色图
+        qimg = QImage((const unsigned char*)(image.data), image.cols, image.rows, static_cast<int>(image.step), QImage::Format_BGR888);
+    } else {
+        qWarning() << "Unsupported image format!";
+        return;
+    }
+
+    // 转换为QPixmap以便在QLabel中使用
+    QPixmap pixmap = QPixmap::fromImage(qimg);
+
+    // 创建一个新的QWidget作为窗口（或者可以使用现有的QWidget）
+    QWidget *window = new QWidget;
+    window->setWindowTitle(windowTitle); // 设置窗口标题
+
+    // 创建一个QLabel来显示图像
+    QLabel *label = new QLabel(window);
+    label->setPixmap(pixmap.scaled(400, pixmap.height() * 400 / pixmap.width(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    // 注意：这里我假设您想要固定窗口宽度为400px，并相应地缩放高度。
+    // 如果您想要窗口大小与图像大小一致，可以直接使用 pixmap.size() 作为 scaled 的参数。
+
+    // 创建一个垂直布局，并将标签添加到布局中
+    QVBoxLayout *layout = new QVBoxLayout(window);
+    layout->addWidget(label);
+    layout->setContentsMargins(0, 0, 0, 0); // 去除布局边距
+
+    // 设置窗口的布局
+    window->setLayout(layout);
+
+    // 显示窗口
+    window->show();
+}
