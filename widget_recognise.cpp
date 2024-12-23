@@ -401,7 +401,7 @@ vector<Mat> Widget::char_segment(Mat input)
 }
 
 
-//省份缩写匹配
+// 省份缩写匹配 - 优化版
 string Widget::match_province(Mat input)
 {
     qWarning() << "";
@@ -413,140 +413,125 @@ string Widget::match_province(Mat input)
                             "藏", "陕", "甘", "青", "宁", "新", "渝" };
 
     std::string province[31];
-
-    for(int i=0;i<31;i++)  //要使用QString转换后的string，否则编码会出错
+    for(int i = 0; i < 31; i++)  // 使用 QString 转换后的 string，以避免编码错误
         province[i] = Qprovince[i].toLocal8Bit().toStdString();
 
     vector<float> max_value;
     vector<string> lic_char_name;
     for (auto i: province)
     {
-        string pattern="Province/"+i+"/*.jpg";
+        string pattern = "Province/" + i + "/*.jpg";
         std::vector<cv::String> fn;
-        std::vector<cv::Mat> img_list;
         cv::glob(pattern, fn);
 
-        int count = fn.size(); //number of png files in images folder
-        for (int j = 0; j < count;j++)
-        {
-            /* Mat t_img = imread(fn[j]);
-                cvtColor(t_img, t_img, COLOR_BGR2GRAY);
-                threshold(t_img, t_img, 100, 255, THRESH_BINARY);*/
-            img_list.push_back(imread(fn[j]));//上面是浅拷贝
-            QCoreApplication::processEvents();  //处理其他事件，防止卡死
-        }
-
-        //模板匹配
         vector<float> result;
-        for (auto& j : img_list)
+        for (auto& fn_path : fn)
         {
-            Size size=j.size();
-            Mat r;
+            // 逐张加载图片，处理完后立即释放
+            Mat img = imread(fn_path); // 加载图片
+            if (img.empty()) continue; // 如果图片为空，跳过
 
-            cvtColor(j, j, COLOR_BGR2GRAY);
-            threshold(j, j, 100, 255, THRESH_BINARY);
+            // 图片预处理
+            cvtColor(img, img, COLOR_BGR2GRAY);
+            threshold(img, img, 100, 255, THRESH_BINARY);
+            
+            Size size = img.size();
             Mat input_resized;
-            cv::resize(input, input_resized, size);//尺寸一致
+            cv::resize(input, input_resized, size); // 调整输入图片大小与模板一致
 
-            matchTemplate(input_resized, j, r, TM_CCOEFF_NORMED);
+            Mat result_map;
+            matchTemplate(input_resized, img, result_map, TM_CCOEFF_NORMED);
+
             // 找到最佳匹配
             double minVal, maxVal;
             Point minLoc, maxLoc;
-            minMaxLoc(r, &minVal, &maxVal, &minLoc, &maxLoc);
-            //cout << max_val << endl;
+            minMaxLoc(result_map, &minVal, &maxVal, &minLoc, &maxLoc);
+
             result.push_back(maxVal);
-            QCoreApplication::processEvents();  //处理其他事件，防止卡死
+            img.release(); // 处理完后立即释放图片内存
         }
 
-        auto max_temp=max_element(result.begin(), result.end());//获取此文件夹内最大匹配值
-        // cout << "当前文件夹最大值"<< * max_temp << endl;
+        auto max_temp = max_element(result.begin(), result.end()); // 获取当前文件夹最大匹配值
         max_value.push_back(*max_temp);
-        lic_char_name.push_back(i);//存储文件夹名
+        lic_char_name.push_back(i); // 存储省份缩写
     }
 
+    // 输出匹配结果
     qWarning() << "各个省份缩写字符匹配率：";
-    for (size_t i = 0 ; i < max_value.size(); i++)
+    for (size_t i = 0; i < max_value.size(); i++)
     {
         qWarning() << QString::fromLocal8Bit(province[i].data()) << max_value[i];
     }
-    auto it = std::max_element(std::begin(max_value), std::end(max_value));
-    size_t ind = std::distance(std::begin(max_value), it);
-//    int ind = distance(max_value.begin(), max_element(max_value.begin(), max_value.end()));
-    qWarning() << "最大匹配率" << *max_element(max_value.begin(), max_value.end())
-               << "该字符为" << QString::fromLocal8Bit(province[ind].data());
+
+    auto it = std::max_element(max_value.begin(), max_value.end());
+    size_t ind = std::distance(max_value.begin(), it);
+    qWarning() << "最大匹配率" << *it << "该字符为" << QString::fromLocal8Bit(province[ind].data());
     qWarning() << "省份缩写匹配结束————————————————";
+
     return province[ind];
 }
 
-
-//数字和字母匹配
+// 数字和字母匹配 - 优化版
 string Widget::match_NumLet(Mat input)
 {
     qWarning() << "";
     qWarning() << "数字和字母匹配开始————————————————";
+
     string NumLet[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
                         "A", "B", "C", "D", "E", "F", "G", "H",
                         "J", "K", "L", "M", "N", "P", "Q", "R",
                         "S", "T", "U", "V", "W", "X", "Y", "Z" };
 
-    QString qlic_char[7];
     vector<float> max_value;
     vector<string> NumLet_name;
     for (auto i: NumLet)
     {
-        //cv::String pattern = "province\\"+i+"\\*";
-        string pattern="NumLet/"+i+"/*.jpg";
+        string pattern = "NumLet/" + i + "/*.jpg";
         std::vector<cv::String> fn;
-        std::vector<cv::Mat> img_list;
         cv::glob(pattern, fn);
 
-        int count = fn.size(); //当前文件夹中图片个数
-        for (int j = 0; j < count;j++)
-        {
-            /* Mat t_img = imread(fn[j]);
-                cvtColor(t_img, t_img, COLOR_BGR2GRAY);
-                threshold(t_img, t_img, 100, 255, THRESH_BINARY);*/
-            img_list.push_back(imread(fn[j]));//上面是浅拷贝，不能正确处理
-            QCoreApplication::processEvents();  //处理其他事件，防止卡死
-        }
-
-        //模板匹配
         vector<float> result;
-        for (auto& j: img_list)
+        for (auto& fn_path : fn)
         {
+            // 逐张加载图片，处理完后立即释放
+            Mat img = imread(fn_path); // 加载图片
+            if (img.empty()) continue; // 如果图片为空，跳过
 
-            Size size=j.size();
-            Mat r;
-
-            cvtColor(j, j, COLOR_BGR2GRAY);
-            threshold(j, j, 100, 255, THRESH_BINARY);
+            // 图片预处理
+            cvtColor(img, img, COLOR_BGR2GRAY);
+            threshold(img, img, 100, 255, THRESH_BINARY);
+            
+            Size size = img.size();
             Mat input_resized;
-            cv::resize(input, input_resized, size);//尺寸一致
+            cv::resize(input, input_resized, size); // 调整输入图片大小与模板一致
 
-            matchTemplate(input_resized, j, r, TM_CCOEFF_NORMED);
+            Mat result_map;
+            matchTemplate(input_resized, img, result_map, TM_CCOEFF_NORMED);
+
             // 找到最佳匹配
             double minVal, maxVal;
             Point minLoc, maxLoc;
-            minMaxLoc(r, &minVal, &maxVal, &minLoc, &maxLoc);
-            //cout << max_val << endl;
+            minMaxLoc(result_map, &minVal, &maxVal, &minLoc, &maxLoc);
+
             result.push_back(maxVal);
-            QCoreApplication::processEvents();  //处理其他事件，防止卡死
+            img.release(); // 处理完后立即释放图片内存
         }
 
-        auto max_temp=max_element(result.begin(), result.end());//获取此文件夹内最大匹配值
-        // cout << "当前文件夹最大值"<< * max_temp << endl;
+        auto max_temp = max_element(result.begin(), result.end()); // 获取当前文件夹最大匹配值
         max_value.push_back(*max_temp);
-        NumLet_name.push_back(i);//存储文件夹名
+        NumLet_name.push_back(i); // 存储数字或字母
     }
-    for (size_t i = 0 ; i < max_value.size(); i++)
+
+    // 输出匹配结果
+    for (size_t i = 0; i < max_value.size(); i++)
     {
-        qWarning()  << QString::fromLocal8Bit(NumLet[i].data()) << max_value[i];
+        qWarning() << QString::fromLocal8Bit(NumLet[i].data()) << max_value[i];
     }
-    auto it = std::max_element(std::begin(max_value), std::end(max_value));
-    size_t ind = std::distance(std::begin(max_value), it);
-    //int ind = distance(max_value.begin(), max_element(max_value.begin(), max_value.end()));
-    qWarning() << "最大匹配率" << *max_element(max_value.begin(), max_value.end())
-               << "该字符为" << QString::fromLocal8Bit(NumLet[ind].data());
+
+    auto it = std::max_element(max_value.begin(), max_value.end());
+    size_t ind = std::distance(max_value.begin(), it);
+    qWarning() << "最大匹配率" << *it << "该字符为" << QString::fromLocal8Bit(NumLet[ind].data());
     qWarning() << "数字和字母匹配结束————————————————";
+
     return NumLet[ind];
 }
